@@ -1,0 +1,8 @@
+androguard>=4.1.2
+yara-python>=4.5.0
+jsbeautifier>=1.15.1
+pefile>=2023.2.7
+pyelftools>=0.31
+flare-capa>=7.4.0
+rich>=13.7.0
+pyyaml>=6.0

@@ -1,0 +1,11 @@
+output/
+.venv/
+.capa-rules/
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+
+# Never commit real malware samples or anything you don't have rights to redistribute.
+samples/*
+!samples/.gitkeep
