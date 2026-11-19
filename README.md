@@ -69,6 +69,8 @@ it won't install for you.
 
 ## Usage
 
+### CLI
+
 ```bash
 python retk_cli.py analyze /path/to/target
 python retk_cli.py analyze suspicious.exe --malware
@@ -78,10 +80,46 @@ python retk_cli.py analyze payload.bin --malware --yara-rules my_extra_rules.yar
 
 Then open `output/<...>/report.md`.
 
+### GUI
+
+```bash
+python retk_cli.py gui                 # http://127.0.0.1:5000, local only
+python retk_cli.py gui --port 8080
+```
+
+Upload a file, optionally tick "run static malware triage," and you get the
+same report rendered in the browser — heuristic summary, AI summary (if
+configured, see below), raw evidence, and a chat box to ask follow-up
+questions about that specific analysis. The server binds to `127.0.0.1` by
+default; don't change `--host` to expose it on a network — it accepts file
+uploads and was not hardened for that.
+
+### AI-assisted summary + chat (optional)
+
+Off by default; everything else works without it. To enable:
+
+```bash
+.venv/bin/pip install -r requirements-ai.txt
+export ANTHROPIC_API_KEY=sk-...
+```
+
+With that set, every report gets a second, richer "how this works" summary
+written by an LLM from the same evidence bundle (never from the raw file —
+only the extracted static evidence is sent), and the GUI's chat box answers
+follow-up questions about the specific analysis you're looking at. The
+heuristic (non-AI) summary always runs regardless, so results are still
+useful with zero API usage.
+
 ## Architecture
 
 ```
-retk_cli.py              CLI entry point: identify -> dispatch -> report
+retk_cli.py              CLI entry point (analyze / gui subcommands)
+retk/analyze.py          Shared identify -> pipeline -> report wiring,
+                           used by both the CLI and the GUI
+retk/webapp.py           Local-only Flask GUI (upload, report view, AI chat)
+retk/templates/          GUI HTML templates
+retk/ai.py               Optional Anthropic-API layer (summary + chat),
+                           no-ops cleanly if ANTHROPIC_API_KEY isn't set
 retk/identify.py         Magic-byte + zip-content based file-type router
 retk/tools.py            subprocess + "is this tool installed" helpers
 retk/pipelines/

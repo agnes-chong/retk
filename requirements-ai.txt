@@ -1,0 +1,4 @@
+# Optional. Only needed for the AI-assisted summary + "ask about this analysis"
+# chat (both in the CLI report and the GUI). Everything else in retk works
+# without this and without ANTHROPIC_API_KEY set.
+anthropic>=0.40.0

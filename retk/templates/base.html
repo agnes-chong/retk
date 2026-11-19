@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}retk{% endblock %}</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #2a2e37; --text: #e6e8eb;
+    --muted: #8a92a0; --accent: #5b8cff; --danger: #ff6b6b; --ok: #4fd37a;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text); margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 24px; }
+  header.top h1 { font-size: 20px; margin: 0; letter-spacing: 0.02em; }
+  header.top h1 a { color: var(--text); text-decoration: none; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); }
+  .badge.ok { color: var(--ok); border-color: var(--ok); }
+  .badge.off { color: var(--muted); }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  a { color: var(--accent); }
+  pre, code { font-family: var(--mono); }
+  pre { background: #0b0d11; border: 1px solid var(--border); border-radius: 8px; padding: 14px; overflow-x: auto; font-size: 12.5px; }
+  details > summary { cursor: pointer; color: var(--accent); margin: 10px 0; font-size: 13px; }
+  .error { color: var(--danger); margin-bottom: 16px; }
+  input[type=file] { color: var(--text); }
+  button, input[type=submit] {
+    background: var(--accent); color: white; border: none; border-radius: 6px;
+    padding: 9px 18px; font-size: 14px; cursor: pointer;
+  }
+  button:hover, input[type=submit]:hover { opacity: 0.9; }
+  label { font-size: 14px; color: var(--muted); display: block; margin: 10px 0; }
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 6px 0 14px; }
+  .chip { font-size: 12px; background: #0b0d11; border: 1px solid var(--border); border-radius: 12px; padding: 3px 10px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1><a href="/">retk</a></h1>
+    {% if ai_available %}
+      <span class="badge ok">AI summary enabled</span>
+    {% else %}
+      <span class="badge off">AI summary off (set ANTHROPIC_API_KEY)</span>
+    {% endif %}
+  </header>
+  {% block body %}{% endblock %}
+</div>
+</body>
+</html>

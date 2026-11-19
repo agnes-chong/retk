@@ -37,6 +37,8 @@ cat <<EOF
     - jadx (Android Java decompiler):   https://github.com/skylot/jadx/releases
     - apktool (Android resource/smali): https://apktool.org/
     - Ghidra (deep binary decompiler):  https://github.com/NationalSecurityAgency/ghidra/releases
+    - AI-assisted summaries + chat:     $VENV_DIR/bin/pip install -r requirements-ai.txt
+                                        then export ANTHROPIC_API_KEY=sk-...
     - nasm/pwntools/angr etc. are NOT required by retk itself; they're for
       manual follow-up once retk's report points you at something interesting.
 
@@ -44,6 +46,7 @@ Activate the venv and run retk:
     source "$VENV_DIR/bin/activate"
     export CAPA_RULES_DIR="$CAPA_RULES_DIR"   # picked up automatically by --malware
     python retk_cli.py analyze /path/to/target
+    python retk_cli.py gui                     # local web GUI at http://127.0.0.1:5000
 
 iOS note: full Mach-O decompilation needs macOS tooling (class-dump, otool)
 and isn't available here on Linux/WSL — the ios pipeline still extracts

@@ -3,58 +3,40 @@
 report explaining what it is and how it likely works.
 
     python retk_cli.py analyze path/to/target [--out DIR] [--malware] [--yara-rules FILE]
+    python retk_cli.py gui [--host 127.0.0.1] [--port 5000]
 
 See README.md for installation, supported targets, and the legal/ethical
 usage disclaimer (read it before pointing this at anything you don't own).
 """
 import argparse
 import sys
-from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from retk import identify as identify_mod
-from retk import report as report_mod
-from retk.pipelines import native, android, ios, web_js, malware as malware_mod, generic
-
-
-def _run_pipeline(kind: str, path: str, outdir: Path) -> dict:
-    if kind in (identify_mod.KIND_NATIVE_PE, identify_mod.KIND_NATIVE_ELF, identify_mod.KIND_NATIVE_MACHO):
-        return native.run(path, kind)
-    if kind == identify_mod.KIND_ANDROID_APK:
-        return android.run(path, outdir)
-    if kind == identify_mod.KIND_IOS_IPA:
-        return ios.run(path)
-    if kind == identify_mod.KIND_WEB_JS:
-        return web_js.run(path)
-    return generic.run(path)
+from retk.analyze import analyze_file
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
-    target = Path(args.target)
-    if not target.is_file():
-        print(f"error: {target} is not a file", file=sys.stderr)
+    print(f"[retk] running static analysis on {args.target} ...")
+    try:
+        result = analyze_file(args.target, out=args.out, malware=args.malware, yara_rules=args.yara_rules)
+    except FileNotFoundError as e:
+        print(f"error: {e}", file=sys.stderr)
         return 1
 
-    identify_result = identify_mod.identify(str(target))
-    print(f"[retk] identified as: {identify_result['kind']} ({identify_result.get('file_magic') or 'n/a'})")
+    print(f"[retk] identified as: {result['identify_result']['kind']} "
+          f"({result['identify_result'].get('file_magic') or 'n/a'})")
+    print(f"\n[retk] done. Report: {result['report_path']}")
+    print(f"[retk] raw evidence: {result['outdir'] / 'evidence.json'}")
+    return 0
 
-    outdir = Path(args.out) if args.out else Path("output") / f"{target.stem}_{datetime.now():%Y%m%d_%H%M%S}"
 
-    print("[retk] running static analysis pipeline...")
-    evidence = _run_pipeline(identify_result["kind"], str(target), outdir)
-
-    malware_evidence = None
-    if args.malware:
-        print("[retk] running malware triage layer (static only, nothing is executed)...")
-        malware_evidence = malware_mod.run(str(target), extra_yara_rules=args.yara_rules)
-
-    print("[retk] writing report...")
-    report_path = report_mod.build(identify_result, evidence, outdir, malware_evidence)
-
-    print(f"\n[retk] done. Report: {report_path}")
-    print(f"[retk] raw evidence: {outdir / 'evidence.json'}")
+def cmd_gui(args: argparse.Namespace) -> int:
+    from retk.webapp import create_app
+    app = create_app()
+    print(f"[retk] GUI running at http://{args.host}:{args.port} (local only, do not expose this port)")
+    app.run(host=args.host, port=args.port, debug=False)
     return 0
 
 
@@ -70,6 +52,11 @@ def main() -> int:
                            help="Also run static malware triage (YARA + capa). Never executes the sample.")
     p_analyze.add_argument("--yara-rules", help="Path to an additional .yar rules file")
     p_analyze.set_defaults(func=cmd_analyze)
+
+    p_gui = sub.add_parser("gui", help="Launch the local web GUI")
+    p_gui.add_argument("--host", default="127.0.0.1", help="Bind address (default: 127.0.0.1, keep it local)")
+    p_gui.add_argument("--port", type=int, default=5000)
+    p_gui.set_defaults(func=cmd_gui)
 
     args = parser.parse_args()
     return args.func(args)

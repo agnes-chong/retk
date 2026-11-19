@@ -6,13 +6,13 @@ Two layers of "explain how it works":
    `anthropic` package is installed — richer prose, entirely optional.
 """
 import json
-import os
-import textwrap
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import ai
 
-def _heuristic_summary(identify_result: dict, evidence: dict, malware_evidence: dict | None) -> str:
+
+def heuristic_summary(identify_result: dict, evidence: dict, malware_evidence: dict | None) -> str:
     lines = []
     kind = identify_result.get("kind", "unknown")
     lines.append(f"This file was identified as **{kind}** ({identify_result.get('file_magic') or 'no file-magic available'}).")
@@ -98,47 +98,14 @@ def _heuristic_summary(identify_result: dict, evidence: dict, malware_evidence: 
     return "\n\n".join(lines)
 
 
-def _llm_summary(evidence_bundle: dict) -> str | None:
-    """Best-effort richer explanation via the Anthropic API, if configured. Returns None if unavailable."""
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        return None
-    try:
-        import anthropic
-    except ImportError:
-        return None
-
-    try:
-        client = anthropic.Anthropic()
-        evidence_text = json.dumps(evidence_bundle, indent=2, default=str)[:60000]
-        msg = client.messages.create(
-            model="claude-sonnet-5-5",
-            max_tokens=1200,
-            messages=[{
-                "role": "user",
-                "content": (
-                    "You are a reverse-engineering assistant. Given this static-analysis evidence "
-                    "bundle (strings, imports, disassembly, permissions, etc.) produced by an "
-                    "automated tool, write a clear, accurate, plain-English explanation of what this "
-                    "program most likely does and how it works. Be precise about what's confirmed by "
-                    "the evidence vs. speculative. If the evidence suggests malicious capability, say "
-                    "so plainly and note it's an indicator, not a verdict. Evidence JSON:\n\n"
-                    + evidence_text
-                ),
-            }],
-        )
-        return "".join(block.text for block in msg.content if hasattr(block, "text"))
-    except Exception as e:
-        return f"(LLM summary requested but failed: {e})"
-
-
 def build(identify_result: dict, evidence: dict, outdir: Path, malware_evidence: dict | None = None) -> Path:
     outdir.mkdir(parents=True, exist_ok=True)
 
     bundle = {"identify": identify_result, "evidence": evidence, "malware_triage": malware_evidence}
     (outdir / "evidence.json").write_text(json.dumps(bundle, indent=2, default=str))
 
-    heuristic = _heuristic_summary(identify_result, evidence, malware_evidence)
-    llm = _llm_summary(bundle)
+    heuristic = heuristic_summary(identify_result, evidence, malware_evidence)
+    llm = ai.summarize(bundle)
 
     md = []
     md.append(f"# retk analysis report — {Path(identify_result['path']).name}")

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}retk — analyze a file{% endblock %}
+{% block body %}
+  <div class="panel">
+    <p class="muted">Drop in a native binary (PE/ELF/Mach-O), Android APK, iOS IPA, or JS bundle.
+    Everything is static analysis — nothing you upload is ever executed. Runs locally, nothing leaves
+    this machine unless you have AI chat enabled, in which case evidence (not the raw file) is sent
+    to Anthropic's API when you ask a question.</p>
+
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+
+    <form action="/analyze" method="post" enctype="multipart/form-data">
+      <input type="file" name="file" required>
+      <label>
+        <input type="checkbox" name="malware"> Run static malware triage (YARA + capa) — still never executes the file.
+      </label>
+      <input type="submit" value="Analyze">
+    </form>
+  </div>
+
+  <div class="panel muted">
+    Only analyze files you own or are authorized to analyze. See the README's legal/ethical-use
+    section. This is a local tool — the server only listens on 127.0.0.1.
+  </div>
+{% endblock %}
