@@ -2,36 +2,44 @@
 {% block title %}retk — {{ filename }}{% endblock %}
 {% block body %}
 
+{% if risk %}
+<div class="risk-banner risk-{{ risk.level }}">
+  <span class="risk-dot"></span>{{ risk.text }}
+</div>
+{% endif %}
+
 <div class="panel">
   <div class="chip-row">
-    <span class="chip">{{ identify_result.kind }}</span>
+    <span class="chip accent">{{ kind_label }}</span>
     {% if malware_evidence %}<span class="chip">malware triage: on</span>{% endif %}
   </div>
-  <p class="muted" style="word-break:break-all">{{ identify_result.file_magic or 'no file magic available' }}</p>
-  <p>
-    <a href="/download/{{ analysis_id }}/report.md">Download report.md</a> ·
-    <a href="/download/{{ analysis_id }}/evidence.json">Download evidence.json</a> ·
-    <a href="/">New analysis</a>
-  </p>
+  <div class="filename" title="{{ filename }}">{{ filename }}</div>
+  <p class="faint" style="word-break:break-all; margin-top:4px;">{{ identify_result.file_magic or 'no file magic available' }}</p>
+  <div class="divider"></div>
+  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+    <a class="btn ghost" href="/download/{{ analysis_id }}/report.md">⬇ report.md</a>
+    <a class="btn ghost" href="/download/{{ analysis_id }}/evidence.json">⬇ evidence.json</a>
+    <a class="btn ghost" href="/">+ New analysis</a>
+  </div>
 </div>
 
 <div class="panel">
-  <h3>How this works (heuristic summary)</h3>
-  <p>{{ heuristic | render_summary }}</p>
+  <h3>How this works — heuristic summary</h3>
+  <div class="summary-text">{{ heuristic | render_summary }}</div>
 </div>
 
 {% if llm %}
 <div class="panel">
-  <h3>How this works (AI-assisted summary)</h3>
-  <p>{{ llm | render_summary }}</p>
+  <h3>How this works — AI-assisted summary</h3>
+  <div class="summary-text">{{ llm | render_summary }}</div>
 </div>
 {% endif %}
 
 {% if malware_evidence %}
 <div class="panel">
   <h3>Malware triage (static only)</h3>
-  <p class="muted">{{ malware_evidence.safety_banner }}</p>
-  <details open><summary>raw YARA / capa output</summary>
+  <p class="faint">{{ malware_evidence.safety_banner }}</p>
+  <details><summary>Raw YARA / capa output</summary>
     <pre>{{ malware_pretty }}</pre>
   </details>
 </div>
@@ -39,7 +47,7 @@
 
 <div class="panel">
   <h3>Raw evidence</h3>
-  <details><summary>show full evidence.json</summary>
+  <details><summary>Full evidence.json</summary>
     <pre>{{ evidence_pretty }}</pre>
   </details>
 </div>
@@ -47,36 +55,57 @@
 <div class="panel">
   <h3>Ask about this analysis</h3>
   {% if not ai_available %}
-    <p class="muted">Set <code>ANTHROPIC_API_KEY</code> (and <code>pip install anthropic</code>) to enable this.</p>
+    <p class="faint" style="margin-bottom:14px;">
+      Set <code class="inline">ANTHROPIC_API_KEY</code> (and <code class="inline">pip install anthropic</code>) to enable this.
+    </p>
   {% endif %}
-  <div id="chat-log" style="margin-bottom:12px;"></div>
-  <form id="chat-form" style="display:flex; gap:8px;">
-    <input id="chat-input" type="text" placeholder="e.g. does this talk to the network?"
-           style="flex:1; padding:9px 12px; border-radius:6px; border:1px solid var(--border); background:#0b0d11; color:var(--text);">
-    <button type="submit">Ask</button>
+  <div id="chat-log"></div>
+  <form id="chat-form">
+    <input id="chat-input" type="text" placeholder="e.g. does this talk to the network?" autocomplete="off">
+    <button type="submit" id="chat-send">Ask</button>
   </form>
 </div>
+
+<style>
+  .risk-banner {
+    display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-radius: 10px;
+    font-size: 13.5px; margin-bottom: 18px; border: 1px solid;
+  }
+  .risk-banner.risk-ok { background: var(--ok-soft); color: var(--ok); border-color: color-mix(in srgb, var(--ok) 35%, var(--border)); }
+  .risk-banner.risk-danger { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
+  .risk-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .filename { font-size: 16px; font-weight: 600; word-break: break-all; }
+  .summary-text { font-size: 14.5px; }
+  .summary-text strong { color: var(--text); }
+
+  #chat-log { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; max-height: 420px; overflow-y: auto; }
+  .msg { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 13.5px; white-space: pre-wrap; }
+  .msg.user { align-self: flex-end; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: white; border-bottom-right-radius: 4px; }
+  .msg.assistant { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border-soft); border-bottom-left-radius: 4px; }
+  .msg.pending { color: var(--faint); font-style: italic; }
+  #chat-form { display: flex; gap: 8px; }
+  #chat-input {
+    flex: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--panel-2); color: var(--text); font-size: 14px;
+  }
+  #chat-input:focus { outline: none; border-color: var(--accent); }
+</style>
 
 <script>
 const analysisId = {{ analysis_id | tojson }};
 const chatLog = document.getElementById('chat-log');
 const form = document.getElementById('chat-form');
 const input = document.getElementById('chat-input');
+const sendBtn = document.getElementById('chat-send');
 let history = [];
 
 function addMsg(role, text) {
   const div = document.createElement('div');
-  div.style.margin = '8px 0';
-  div.innerHTML = '<strong>' + (role === 'user' ? 'You' : 'retk') + ':</strong> ' +
-    document.createElement('span').textContent; // placeholder, set below safely
-  const span = document.createElement('span');
-  span.textContent = text;
-  div.innerHTML = '';
-  const strong = document.createElement('strong');
-  strong.textContent = (role === 'user' ? 'You: ' : 'retk: ');
-  div.appendChild(strong);
-  div.appendChild(span);
+  div.className = 'msg ' + role;
+  div.textContent = text;
   chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+  return div;
 }
 
 form.addEventListener('submit', async (e) => {
@@ -85,15 +114,27 @@ form.addEventListener('submit', async (e) => {
   if (!q) return;
   addMsg('user', q);
   input.value = '';
+  sendBtn.disabled = true;
+  const pending = addMsg('assistant pending', 'thinking…');
   history.push({role: 'user', content: q});
-  const resp = await fetch('/ask/' + analysisId, {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({question: q, history: history.slice(0, -1)})
-  });
-  const data = await resp.json();
-  addMsg('assistant', data.answer);
-  history.push({role: 'assistant', content: data.answer});
+
+  try {
+    const resp = await fetch('/ask/' + analysisId, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question: q, history: history.slice(0, -1)})
+    });
+    const data = await resp.json();
+    pending.textContent = data.answer;
+    pending.className = 'msg assistant';
+    history.push({role: 'assistant', content: data.answer});
+  } catch (err) {
+    pending.textContent = 'Request failed: ' + err;
+    pending.className = 'msg assistant';
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
 });
 </script>
 

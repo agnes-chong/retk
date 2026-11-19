@@ -1,25 +1,124 @@
 {% extends "base.html" %}
 {% block title %}retk — analyze a file{% endblock %}
 {% block body %}
-  <div class="panel">
-    <p class="muted">Drop in a native binary (PE/ELF/Mach-O), Android APK, iOS IPA, or JS bundle.
-    Everything is static analysis — nothing you upload is ever executed. Runs locally, nothing leaves
-    this machine unless you have AI chat enabled, in which case evidence (not the raw file) is sent
-    to Anthropic's API when you ask a question.</p>
 
-    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+{% if error %}<div class="error-box">{{ error }}</div>{% endif %}
 
-    <form action="/analyze" method="post" enctype="multipart/form-data">
-      <input type="file" name="file" required>
-      <label>
-        <input type="checkbox" name="malware"> Run static malware triage (YARA + capa) — still never executes the file.
-      </label>
-      <input type="submit" value="Analyze">
-    </form>
-  </div>
+<div class="panel">
+  <h3>Analyze a file</h3>
+  <p class="muted" style="margin-top:0">
+    Native binary (PE/ELF/Mach-O), Android APK, iOS IPA, or JS bundle. Everything is
+    <strong>static analysis only</strong> — nothing you drop in is ever executed.
+  </p>
 
-  <div class="panel muted">
-    Only analyze files you own or are authorized to analyze. See the README's legal/ethical-use
-    section. This is a local tool — the server only listens on 127.0.0.1.
-  </div>
+  <form id="analyze-form" action="/analyze" method="post" enctype="multipart/form-data">
+    <div id="dropzone" tabindex="0">
+      <input id="file-input" type="file" name="file" required hidden>
+      <div id="dz-empty">
+        <div class="dz-icon">⬆</div>
+        <div class="dz-main">Drop a file here, or <span class="dz-link">browse</span></div>
+        <div class="faint">Up to 200&nbsp;MB</div>
+      </div>
+      <div id="dz-picked" hidden>
+        <div class="dz-icon">◆</div>
+        <div id="dz-filename" class="dz-main"></div>
+        <div id="dz-filesize" class="faint"></div>
+      </div>
+    </div>
+
+    <label style="display:flex; align-items:center; gap:8px; margin-top:16px; cursor:pointer;">
+      <input type="checkbox" name="malware" style="width:16px;height:16px;">
+      Run static malware triage (YARA + capa) — still never executes the file.
+    </label>
+
+    <div style="margin-top:18px; display:flex; align-items:center; gap:14px;">
+      <button type="submit" id="submit-btn" disabled>Analyze →</button>
+      <span id="loading-note" class="faint" hidden>Running pipelines locally — this can take up to a minute…</span>
+    </div>
+  </form>
+</div>
+
+<div class="panel faint">
+  Only analyze files you own or are authorized to analyze — see the README's legal/ethical-use
+  section. This server only listens on <code class="inline">127.0.0.1</code>.
+</div>
+
+<div id="overlay" hidden>
+  <div class="spinner"></div>
+  <div style="margin-top:16px; font-size:14px;">Analyzing <strong id="overlay-name"></strong>…</div>
+  <div class="faint" style="margin-top:6px;">Identifying file type, running tools, building the report.</div>
+</div>
+
+<style>
+  #dropzone {
+    border: 1.5px dashed var(--border); border-radius: 12px; padding: 34px 20px; text-align: center;
+    cursor: pointer; transition: border-color 0.15s, background 0.15s; outline: none;
+  }
+  #dropzone:hover, #dropzone:focus, #dropzone.dragover {
+    border-color: var(--accent); background: var(--accent-soft);
+  }
+  .dz-icon { font-size: 22px; color: var(--accent); margin-bottom: 8px; }
+  .dz-main { font-size: 14.5px; }
+  .dz-link { color: var(--accent); text-decoration: underline; }
+  #overlay {
+    position: fixed; inset: 0; background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(3px); flex-direction: column; align-items: center;
+    justify-content: center; z-index: 50; text-align: center; padding: 20px;
+    display: none;
+  }
+  #overlay:not([hidden]) { display: flex; }
+  .spinner {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<script>
+  const dz = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file-input');
+  const dzEmpty = document.getElementById('dz-empty');
+  const dzPicked = document.getElementById('dz-picked');
+  const dzName = document.getElementById('dz-filename');
+  const dzSize = document.getElementById('dz-filesize');
+  const submitBtn = document.getElementById('submit-btn');
+  const form = document.getElementById('analyze-form');
+  const overlay = document.getElementById('overlay');
+  const overlayName = document.getElementById('overlay-name');
+
+  function fmtSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function showFile(file) {
+    dzEmpty.hidden = true;
+    dzPicked.hidden = false;
+    dzName.textContent = file.name;
+    dzSize.textContent = fmtSize(file.size);
+    submitBtn.disabled = false;
+  }
+
+  dz.addEventListener('click', () => fileInput.click());
+  dz.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) showFile(fileInput.files[0]);
+  });
+  ['dragenter', 'dragover'].forEach(evt =>
+    dz.addEventListener(evt, (e) => { e.preventDefault(); dz.classList.add('dragover'); }));
+  ['dragleave', 'drop'].forEach(evt =>
+    dz.addEventListener(evt, (e) => { e.preventDefault(); dz.classList.remove('dragover'); }));
+  dz.addEventListener('drop', (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) { fileInput.files = e.dataTransfer.files; showFile(file); }
+  });
+
+  form.addEventListener('submit', () => {
+    overlayName.textContent = fileInput.files[0] ? fileInput.files[0].name : 'file';
+    overlay.hidden = false;
+    submitBtn.disabled = true;
+  });
+</script>
 {% endblock %}

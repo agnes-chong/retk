@@ -13,7 +13,7 @@ from flask import Flask, abort, jsonify, redirect, render_template, request, sen
 from markupsafe import Markup, escape
 from werkzeug.utils import secure_filename
 
-from . import ai, report
+from . import ai, identify as identify_mod, report
 from .analyze import analyze_file
 
 MAX_UPLOAD_BYTES = 200 * 1024 * 1024  # 200 MB — plenty for CTF/APK-sized samples, not a media server
@@ -36,6 +36,20 @@ def _render_summary(text: str) -> Markup:
     safe = _BOLD_RE.sub(r"<strong>\1</strong>", safe)
     safe = safe.replace("\n\n", "<br><br>")
     return Markup(safe)
+
+
+def _risk_banner(malware_evidence: dict | None) -> dict | None:
+    """Summarize the malware-triage layer into a one-line banner for the top of the report."""
+    if not malware_evidence:
+        return None
+    yara_hits = len((malware_evidence.get("yara") or {}).get("matches") or [])
+    capa_hits = (malware_evidence.get("capa") or {}).get("capability_count") or 0
+    total = yara_hits + capa_hits
+    if total == 0:
+        return {"level": "ok", "text": "No static malware indicators found (YARA + capa triage)."}
+    return {"level": "danger",
+            "text": f"{total} static indicator(s) found (YARA + capa) — review before trusting this file. "
+                    "Indicators, not a verdict: legitimate software can trip these too."}
 
 
 def _outdir_for(analysis_id: str) -> Path:
@@ -97,9 +111,11 @@ def create_app() -> Flask:
             "result.html",
             analysis_id=analysis_id,
             filename=Path(identify_result["path"]).name,
+            kind_label=identify_mod.KIND_LABELS.get(identify_result["kind"], identify_result["kind"]),
             identify_result=identify_result,
             evidence=evidence,
             malware_evidence=malware_evidence,
+            risk=_risk_banner(malware_evidence),
             heuristic=heuristic,
             llm=llm,
             ai_available=ai.available(),

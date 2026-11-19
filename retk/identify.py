@@ -14,6 +14,18 @@ KIND_WEB_JS = "web_js"
 KIND_SCRIPT = "script"
 KIND_UNKNOWN = "unknown"
 
+KIND_LABELS = {
+    KIND_NATIVE_PE: "Windows binary (PE)",
+    KIND_NATIVE_ELF: "Linux binary (ELF)",
+    KIND_NATIVE_MACHO: "macOS binary (Mach-O)",
+    KIND_ANDROID_APK: "Android app (APK)",
+    KIND_IOS_IPA: "iOS app (IPA)",
+    KIND_JAVA_JAR: "Java archive (JAR)",
+    KIND_WEB_JS: "JavaScript bundle",
+    KIND_SCRIPT: "Script",
+    KIND_UNKNOWN: "Unrecognized file",
+}
+
 _MACHO_MAGICS = {
     b"\xfe\xed\xfa\xce", b"\xce\xfa\xed\xfe",  # 32-bit
     b"\xfe\xed\xfa\xcf", b"\xcf\xfa\xed\xfe",  # 64-bit
