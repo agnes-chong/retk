@@ -30,7 +30,7 @@ def heuristic_summary(identify_result: dict, evidence: dict, malware_evidence: d
         if off:
             lines.append(f"Security mitigations NOT enabled: {', '.join(off)}.")
         if pe.get("likely_packed"):
-            lines.append("At least one section has high entropy (>7.2) — this binary may be packed or "
+            lines.append("At least one section has high entropy (>7.2). This binary may be packed or "
                           "encrypted, which will make imports/strings look sparse until unpacked.")
         imports = pe.get("imports", [])
         net_apis = [i for i in imports if any(h in i for h in
@@ -38,23 +38,23 @@ def heuristic_summary(identify_result: dict, evidence: dict, malware_evidence: d
         proc_apis = [i for i in imports if any(h in i for h in
                      ("CreateProcess", "WinExec", "ShellExecute", "CreateRemoteThread", "WriteProcessMemory"))]
         if net_apis:
-            lines.append(f"Imports network-capable APIs: {', '.join(net_apis[:8])} — "
-                         "this program likely talks to the network.")
+            lines.append(f"Imports network-capable APIs: {', '.join(net_apis[:8])}. "
+                         "This program likely talks to the network.")
         if proc_apis:
-            lines.append(f"Imports process-manipulation APIs: {', '.join(proc_apis[:8])} — "
-                         "this program can spawn or inject into other processes.")
+            lines.append(f"Imports process-manipulation APIs: {', '.join(proc_apis[:8])}. "
+                         "This program can spawn or inject into other processes.")
 
     if elf:
         if elf.get("likely_packed"):
-            lines.append("At least one ELF section has high entropy — possibly packed/encrypted.")
+            lines.append("At least one ELF section has high entropy, possibly packed/encrypted.")
         syms = elf.get("dynamic_symbols", [])
         net_syms = [s for s in syms if s in ("socket", "connect", "send", "recv", "getaddrinfo")]
         if net_syms:
-            lines.append(f"Links network syscalls: {', '.join(net_syms)} — this program likely talks to the network.")
+            lines.append(f"Links network syscalls: {', '.join(net_syms)}. This program likely talks to the network.")
 
     if strings.get("urls"):
-        lines.append(f"Found {len(strings['urls'])} URL-like string(s), e.g. {strings['urls'][0]!r} — "
-                     "worth checking where these point.")
+        lines.append(f"Found {len(strings['urls'])} URL-like string(s), e.g. {strings['urls'][0]!r}. "
+                     "Worth checking where these point.")
     if strings.get("ips"):
         lines.append(f"Found hardcoded IP address string(s): {', '.join(strings['ips'][:5])}.")
 
@@ -84,7 +84,7 @@ def heuristic_summary(identify_result: dict, evidence: dict, malware_evidence: d
         matches = y.get("matches", [])
         if matches:
             rule_names = ", ".join(m["rule"] for m in matches)
-            lines.append(f"**YARA triage hits**: {rule_names} — these are indicators worth human review, "
+            lines.append(f"**YARA triage hits**: {rule_names}. These are indicators worth human review, "
                          "not a verdict; legitimate software can trip these too.")
         capa = malware_evidence.get("capa", {})
         if capa.get("capability_count"):
@@ -92,8 +92,8 @@ def heuristic_summary(identify_result: dict, evidence: dict, malware_evidence: d
                          "(see the capa section for the MITRE ATT&CK mapping).")
 
     if len(lines) == 1:
-        lines.append("No strong behavioral signal was found by the automated heuristics above — "
-                     "read the raw evidence sections (strings, imports, disassembly) for manual review.")
+        lines.append("No strong behavioral signal was found by the automated heuristics above. "
+                     "Read the raw evidence sections (strings, imports, disassembly) for manual review.")
 
     return "\n\n".join(lines)
 
@@ -108,7 +108,7 @@ def build(identify_result: dict, evidence: dict, outdir: Path, malware_evidence:
     llm = ai.summarize(bundle)
 
     md = []
-    md.append(f"# retk analysis report — {Path(identify_result['path']).name}")
+    md.append(f"# retk analysis report: {Path(identify_result['path']).name}")
     md.append(f"_Generated {datetime.now(timezone.utc).isoformat(timespec='seconds')}_\n")
 
     md.append("## File identification")
@@ -124,7 +124,7 @@ def build(identify_result: dict, evidence: dict, outdir: Path, malware_evidence:
         md.append(llm + "\n")
     else:
         md.append("## How this program works (LLM-assisted summary)")
-        md.append("_Not generated — set `ANTHROPIC_API_KEY` and `pip install anthropic` to enable this, "
+        md.append("_Not generated. Set `ANTHROPIC_API_KEY` and `pip install anthropic` to enable this, "
                   "or paste `evidence.json` into an LLM of your choice for a deeper narrative explanation._\n")
 
     if malware_evidence:
@@ -133,7 +133,7 @@ def build(identify_result: dict, evidence: dict, outdir: Path, malware_evidence:
         y = malware_evidence.get("yara", {})
         if y.get("matches"):
             for m in y["matches"]:
-                md.append(f"- **{m['rule']}** — {m['description']} (strings: {', '.join(m['matched_strings'])})")
+                md.append(f"- **{m['rule']}**: {m['description']} (strings: {', '.join(m['matched_strings'])})")
         elif y.get("error"):
             md.append(f"- YARA: {y['error']}")
         else:

@@ -16,7 +16,7 @@ _SECRET_RE = re.compile(
 def run(path: str) -> dict:
     p = Path(path)
     evidence: dict = {"pipeline": "generic_fallback", "notes": [
-        "File type wasn't recognized as PE/ELF/Mach-O/APK/IPA/JS — ran a generic "
+        "File type wasn't recognized as PE/ELF/Mach-O/APK/IPA/JS. Ran a generic "
         "strings + URL/secret scan. For a real analysis, inspect the file manually "
         "(e.g. `file`, `strings`, or open it in a hex editor / disassembler)."
     ]}

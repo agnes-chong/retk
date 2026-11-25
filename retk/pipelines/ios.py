@@ -28,7 +28,7 @@ def run(path: str) -> dict:
         "notes": [
             "Full Mach-O decompilation (class-dump / otool -ObjC) needs macOS tooling and "
             "is not available on this platform. This pipeline extracts what it can from the "
-            "IPA's zip/plist structure and raw strings instead — treat it as reconnaissance, "
+            "IPA's zip/plist structure and raw strings instead. Treat it as reconnaissance, "
             "not a full reverse engineering of the binary's logic."
         ],
     }
@@ -37,7 +37,7 @@ def run(path: str) -> dict:
         with zipfile.ZipFile(p) as zf:
             plist_name = _find_info_plist(zf)
             if not plist_name:
-                evidence["error"] = "No Payload/*.app/Info.plist found — not a valid IPA?"
+                evidence["error"] = "No Payload/*.app/Info.plist found. Not a valid IPA?"
                 return evidence
 
             with zf.open(plist_name) as fh:

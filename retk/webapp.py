@@ -48,7 +48,7 @@ def _risk_banner(malware_evidence: dict | None) -> dict | None:
     if total == 0:
         return {"level": "ok", "text": "No static malware indicators found (YARA + capa triage)."}
     return {"level": "danger",
-            "text": f"{total} static indicator(s) found (YARA + capa) — review before trusting this file. "
+            "text": f"{total} static indicator(s) found (YARA + capa). Review before trusting this file. "
                     "Indicators, not a verdict: legitimate software can trip these too."}
 
 

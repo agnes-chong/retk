@@ -30,7 +30,7 @@ def _beautify(src: str) -> tuple[str, list[str]]:
         beautified = jsbeautifier.beautify(src)
         return beautified, notes
     except ImportError:
-        notes.append("jsbeautifier not installed (pip install -r requirements.txt) — showing raw source.")
+        notes.append("jsbeautifier not installed (pip install -r requirements.txt). Showing raw source.")
         return src, notes
 
 
@@ -48,7 +48,7 @@ def run(path: str) -> dict:
     evidence["urls"] = sorted(set(_URL_RE.findall(beautified)))[:80]
     evidence["possible_api_endpoints"] = sorted(set(_ENDPOINT_RE.findall(beautified)))[:80]
     evidence["possible_secrets"] = _SECRET_RE.findall(beautified)[:30]
-    evidence["note_on_secrets"] = ("Keyword/pattern matches only, not verified secrets — "
+    evidence["note_on_secrets"] = ("Keyword/pattern matches only, not verified secrets. "
                                    "confirm manually before treating as real credentials.")
 
     hints = [desc for pattern, desc in _OBFUSCATION_HINTS if pattern.search(src)]

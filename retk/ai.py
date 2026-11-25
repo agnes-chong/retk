@@ -13,8 +13,8 @@ _SYSTEM = (
     "etc.) produced by an automated tool called retk. Be precise about what's "
     "confirmed by the evidence vs. speculative. If the evidence suggests malicious "
     "capability, say so plainly and note it's an indicator, not a verdict. Never "
-    "claim to have executed or dynamically analyzed the sample — everything you "
-    "see is static evidence."
+    "claim to have executed or dynamically analyzed the sample: everything you "
+    "see is static evidence. Write in plain prose, short sentences, no em dashes."
 )
 
 
@@ -59,7 +59,7 @@ def ask(evidence_bundle: dict, question: str, history: list[dict] | None = None)
     """Answer a follow-up question about a specific analysis. `history` is a list of
     {"role": "user"|"assistant", "content": str} from earlier turns in the same chat."""
     if not available():
-        return ("AI chat isn't configured — set the ANTHROPIC_API_KEY environment variable "
+        return ("AI chat isn't configured. Set the ANTHROPIC_API_KEY environment variable "
                 "and `pip install anthropic`, then restart the GUI.")
     try:
         client = _client()

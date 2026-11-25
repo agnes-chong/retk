@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}retk — analyze a file{% endblock %}
+{% block title %}retk: analyze a file{% endblock %}
 {% block body %}
 
 {% if error %}<div class="error-box">{{ error }}</div>{% endif %}
@@ -8,7 +8,7 @@
   <h3>Analyze a file</h3>
   <p class="muted" style="margin-top:0">
     Native binary (PE/ELF/Mach-O), Android APK, iOS IPA, or JS bundle. Everything is
-    <strong>static analysis only</strong> — nothing you drop in is ever executed.
+    <strong>static analysis only</strong>. Nothing you drop in is ever executed.
   </p>
 
   <form id="analyze-form" action="/analyze" method="post" enctype="multipart/form-data">
@@ -28,18 +28,18 @@
 
     <label style="display:flex; align-items:center; gap:8px; margin-top:16px; cursor:pointer;">
       <input type="checkbox" name="malware" style="width:16px;height:16px;">
-      Run static malware triage (YARA + capa) — still never executes the file.
+      Run static malware triage (YARA + capa). Still never executes the file.
     </label>
 
     <div style="margin-top:18px; display:flex; align-items:center; gap:14px;">
       <button type="submit" id="submit-btn" disabled>Analyze →</button>
-      <span id="loading-note" class="faint" hidden>Running pipelines locally — this can take up to a minute…</span>
+      <span id="loading-note" class="faint" hidden>Running pipelines locally, this can take up to a minute.</span>
     </div>
   </form>
 </div>
 
 <div class="panel faint">
-  Only analyze files you own or are authorized to analyze — see the README's legal/ethical-use
+  Only analyze files you own or are authorized to analyze. See the README's legal/ethical-use
   section. This server only listens on <code class="inline">127.0.0.1</code>.
 </div>
 

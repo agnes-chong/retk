@@ -78,13 +78,13 @@ def _androguard_extract(apk) -> dict:
         "urls_in_dex_strings": urls,
         "possible_secret_hints": secret_hits,
         "note_on_secret_hints": "These are string matches on keyword patterns (e.g. 'api_key'), "
-                                 "not confirmed secrets — verify manually before treating as real.",
+                                 "not confirmed secrets, verify manually before treating as real.",
     }
 
 
 def _jadx_decompile(path: Path, outdir: Path) -> dict:
     if not tools.have("jadx"):
-        return {"note": "'jadx' not found — skipping Java-source decompile "
+        return {"note": "'jadx' not found, skipping Java-source decompile "
                          "(androguard output above still covers manifest/permissions/strings)."}
     jadx_out = outdir / "jadx"
     result = tools.run(["jadx", "-d", str(jadx_out), "--no-res", str(path)], timeout=180)

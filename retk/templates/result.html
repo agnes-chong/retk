@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}retk — {{ filename }}{% endblock %}
+{% block title %}retk: {{ filename }}{% endblock %}
 {% block body %}
 
 {% if risk %}
@@ -24,13 +24,13 @@
 </div>
 
 <div class="panel">
-  <h3>How this works — heuristic summary</h3>
+  <h3>How this works (heuristic summary)</h3>
   <div class="summary-text">{{ heuristic | render_summary }}</div>
 </div>
 
 {% if llm %}
 <div class="panel">
-  <h3>How this works — AI-assisted summary</h3>
+  <h3>How this works (AI-assisted summary)</h3>
   <div class="summary-text">{{ llm | render_summary }}</div>
 </div>
 {% endif %}

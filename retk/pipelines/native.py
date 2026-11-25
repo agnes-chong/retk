@@ -156,7 +156,7 @@ def _elf_info(path: Path) -> dict:
 
 def _radare2_summary(path: Path) -> dict:
     if not tools.have("r2"):
-        return {"note": "radare2 ('r2') not found — skipping disassembly/function listing."}
+        return {"note": "radare2 ('r2') not found, skipping disassembly/function listing."}
 
     functions = tools.run(["r2", "-q", "-c", "e scr.color=0; aaa; afl", str(path)], timeout=90)
     entry_disasm = tools.run(["r2", "-q", "-c", "e scr.color=0; aaa; pd 40 @ entry0", str(path)], timeout=90)
@@ -182,7 +182,7 @@ def run(path: str, kind: str) -> dict:
     elif kind == "native_elf":
         evidence["elf"] = _elf_info(p)
     else:
-        evidence["notes"].append("Mach-O detected — detailed header parsing needs macOS tooling "
+        evidence["notes"].append("Mach-O detected. Detailed header parsing needs macOS tooling "
                                   "(otool/class-dump); only strings + radare2 output are available here.")
 
     evidence["radare2"] = _radare2_summary(p)

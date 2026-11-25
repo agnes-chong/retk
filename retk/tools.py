@@ -43,5 +43,5 @@ def missing_tools_note(required: list[str]) -> list[str]:
     notes = []
     for tool in required:
         if not have(tool):
-            notes.append(f"'{tool}' not found on PATH — see setup.sh / README for install instructions.")
+            notes.append(f"'{tool}' not found on PATH. See setup.sh / README for install instructions.")
     return notes
