@@ -28,7 +28,7 @@ if [ ! -d "$CAPA_RULES_DIR" ]; then
         && unzip -q /tmp/capa-rules.zip -d /tmp/capa-rules-extract \
         && mv /tmp/capa-rules-extract/capa-rules-master "$CAPA_RULES_DIR" \
         && rm -rf /tmp/capa-rules.zip /tmp/capa-rules-extract \
-        || echo "    (capa-rules download failed — capa will still run if you pass -r <rules-dir> yourself)"
+        || echo "    (capa-rules download failed. capa will still run if you pass -r <rules-dir> yourself)"
 fi
 
 cat <<EOF

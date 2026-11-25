@@ -1,0 +1,8 @@
+.git
+output/
+.venv/
+.capa-rules/
+samples/*
+!samples/.gitkeep
+__pycache__/
+*.pyc
